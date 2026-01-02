@@ -39,6 +39,22 @@ def prbs15_generate_byte(lfsr):
     return value, next_lfsr
 
 
+def get_prbs_out_value(dut):
+    """
+    Safely get prbs_out value, handling 'X' values gracefully
+    """
+    try:
+        return dut.prbs_out.value.to_unsigned()
+    except ValueError as e:
+        if "non-0/1 values" in str(e):
+            raise AssertionError(
+                f"prbs_out contains 'X' (unknown) values - output is not being driven properly. "
+                f"Current value: {dut.prbs_out.value}. "
+                f"Ensure prbs_out is always assigned in all code paths."
+            ) from e
+        raise
+
+
 @cocotb.test()
 async def test_prbs15_generator(dut):
     """Cocotb test for prbs15_generator"""
@@ -82,7 +98,7 @@ async def test_prbs15_generator(dut):
     await RisingEdge(dut.clock)
     await FallingEdge(dut.clock)  # Check output at falling edge
     exp_byte, lfsr_model = prbs15_generate_byte(lfsr_model)
-    got = dut.prbs_out.value.to_unsigned()
+    got = get_prbs_out_value(dut)
     assert got == exp_byte, (
         f"PRBS mismatch: expected {hex(exp_byte)}, got {hex(got)}"
     )
@@ -93,7 +109,7 @@ async def test_prbs15_generator(dut):
         await FallingEdge(dut.clock)  # Check output at falling edge
         exp_byte, lfsr_model = prbs15_generate_byte(lfsr_model)
 
-        got = dut.prbs_out.value.to_unsigned()
+        got = get_prbs_out_value(dut)
         assert got == exp_byte, (
             f"PRBS mismatch: expected {hex(exp_byte)}, got {hex(got)}"
         )
@@ -106,12 +122,12 @@ async def test_prbs15_generator(dut):
     dut.enable.value = 0
     await RisingEdge(dut.clock)
     await FallingEdge(dut.clock)  # Check output at falling edge
-    held_value = dut.prbs_out.value.to_unsigned()
+    held_value = get_prbs_out_value(dut)
 
     for _ in range(3):
         await RisingEdge(dut.clock)
         await FallingEdge(dut.clock)  # Check output at falling edge
-        assert dut.prbs_out.value.to_unsigned() == held_value, (
+        assert get_prbs_out_value(dut) == held_value, (
             "Output changed while enable=0"
         )
 
@@ -126,7 +142,7 @@ async def test_prbs15_generator(dut):
         await RisingEdge(dut.clock)
         await FallingEdge(dut.clock)  # Check output at falling edge
         exp_byte, lfsr_model = prbs15_generate_byte(lfsr_model)
-        got = dut.prbs_out.value.to_unsigned()
+        got = get_prbs_out_value(dut)
         assert got == exp_byte, (
             f"PRBS mismatch after re-enable: exp {hex(exp_byte)}, got {hex(got)}"
         )
@@ -147,7 +163,7 @@ async def test_prbs15_generator(dut):
     for _ in range(3):
         await RisingEdge(dut.clock)
         await FallingEdge(dut.clock)  # Check output at falling edge
-        assert dut.prbs_out.value.to_unsigned() == 0x00, (
+        assert get_prbs_out_value(dut) == 0x00, (
             "Output not zero with zero seed"
         )
 
