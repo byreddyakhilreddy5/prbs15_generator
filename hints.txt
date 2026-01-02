@@ -6,3 +6,13 @@ CRITICAL: prbs_out must always be driven to a valid value (0 or computed PRBS va
 - When enable goes HIGH, update prbs_out on the next clock edge based on the current LFSR state
 - When enable is LOW, prbs_out should hold its previous value (do not leave it undriven/unassigned)
 - Ensure prbs_out is assigned in all code paths of your always block to prevent 'X' values
+
+Example prbs_out assignment pattern:
+always @(posedge clock or negedge reset_n) begin
+    if (!reset_n) begin
+        prbs_out <= 8'h00;
+    end else if (enable) begin
+        prbs_out <= output_bits;  // or computed PRBS value
+    end
+    // Note: When enable is LOW, prbs_out holds previous value (no assignment needed)
+end
