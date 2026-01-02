@@ -1,0 +1,8 @@
+The prbs seed should be set to a valid value at least 1 clock cycle before the load is made high, enable will be made high only after at least 1 clock cycle after load is made high.
+The first ouput will be MSB 8bits of the prbs_seed the subsequent ouputs will be shifted lfsr
+
+CRITICAL: prbs_out must always be driven to a valid value (0 or computed PRBS value), never left as 'X' (unknown).
+- Initialize prbs_out to 8'h00 on reset (asynchronous reset_n)
+- When enable goes HIGH, update prbs_out on the next clock edge based on the current LFSR state
+- When enable is LOW, prbs_out should hold its previous value (do not leave it undriven/unassigned)
+- Ensure prbs_out is assigned in all code paths of your always block to prevent 'X' values
